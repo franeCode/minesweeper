@@ -33,7 +33,8 @@ class Minesweeper:
                 # Bind left-click event
                 button.bind("<Button-1>", lambda event, r=row, c=col: self.on_left_click(r, c))
                 # Bind right-click event
-                button.bind("<Button-3>", lambda event, r=row, c=col: self.on_right_click(r, c))
+                button.bind("<Button-2>", lambda event, r=row, c=col: self.on_right_click(r, c))
+
 
         # Set weights for rows and columns
         for i in range(self.rows):
@@ -59,6 +60,8 @@ class Minesweeper:
             for j in range(self.cols):
                 if self.board[i][j] != "M":
                     self.board[i][j] = str(int(self.board[i][j]) + 1)
+
+
 
         print("Initialized Board:")
         print(self.board)
