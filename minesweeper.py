@@ -24,7 +24,7 @@ class Minesweeper:
         for row in range(self.rows):
             for col in range(self.cols):
                 # Create buttons or labels for each cell in the grid
-                button = tk.Button(self.board_frame, text="", width=3, height=1)
+                button = tk.Button(self.board_frame, text="", width=1, height=1)
                 button.grid(row=row, column=col)
 
                 # Store the button reference in the 2D list
@@ -55,16 +55,15 @@ class Minesweeper:
             row = position // self.cols
             col = position % self.cols
             self.board[row][col] = "M"
-            
+
         for i in range(self.rows):
             for j in range(self.cols):
                 if self.board[i][j] != "M":
-                    self.board[i][j] = str(int(self.board[i][j]) + 1)
-
-
+                    self.board[i][j] = "0"  # Make sure it's a string "0", not an integer
 
         print("Initialized Board:")
         print(self.board)
+
 
     def on_left_click(self, row, col):
         # Check if the clicked cell is a mine
@@ -74,12 +73,12 @@ class Minesweeper:
         else:
             # Check and reveal the number of adjacent mines
             adjacent_mines = self.count_adjacent_mines(row, col)
-            self.update_cell(row, col, str(adjacent_mines))
-
-            # If no adjacent mines, recursively reveal neighboring cells
             if adjacent_mines == 0:
+                # If no adjacent mines, recursively reveal neighboring cells
                 self.reveal_empty_cells(row, col)
-
+            else:
+                self.update_cell(row, col, str(adjacent_mines))
+            
     def on_right_click(self, row, col):
         # Check if the clicked cell is not revealed
         if not self.is_cell_revealed(row, col):
@@ -122,14 +121,22 @@ class Minesweeper:
     def reveal_empty_cells(self, row, col):
         if 0 <= row < self.rows and 0 <= col < self.cols and not self.is_cell_revealed(row, col):
             # Check if the cell is within the grid bounds and is not already revealed
-            self.update_cell(row, col, " ")
+            self.update_cell(row, col, " ", darker_gray=True)
 
-            for i in range(max(0, row - 1), min(self.rows, row + 2)):
-                for j in range(max(0, col - 1), min(self.cols, col + 2)):
-                    if self.board[i][j] == 0 and not self.is_cell_revealed(i, j):
-                        self.reveal_empty_cells(i, j)
-                    elif self.board[i][j] != "M" and not self.is_cell_revealed(i, j):
-                        self.update_cell(i, j, str(self.board[i][j]))
+            queue = [(row, col)]
+
+            while queue:
+                current_row, current_col = queue.pop(0)
+
+                for i in range(max(0, current_row - 1), min(self.rows, current_row + 2)):
+                    for j in range(max(0, current_col - 1), min(self.cols, current_col + 2)):
+                        if not self.is_cell_revealed(i, j):
+                            if self.board[i][j] == "0":
+                                self.update_cell(i, j, "0", darker_gray=True)
+                                queue.append((i, j))
+                            elif self.board[i][j] != "M":
+                                self.update_cell(i, j, str(self.board[i][j]))
+
 
     def reveal_all_mines(self):
         # Reveal all mines on the game board
@@ -173,5 +180,8 @@ class Minesweeper:
             widget.destroy()
 
         # Recreate the game board and start a new game
+        self.board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
+        self.buttons = [[None for _ in range(self.cols)] for _ in range(self.rows)]
+        self.initialize_board()
         self.create_widgets()
 
