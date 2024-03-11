@@ -10,11 +10,12 @@ class Minesweeper:
         self.mines = mines
         self.board = [[0 for _ in range(cols)] for _ in range(rows)]
         self.buttons = [[None for _ in range(cols)] for _ in range(rows)]
-        self.emoji_path = "media/happy_emoji.png"
+        self.emoji_path = "media/smiley.png"
 
         self.create_widgets()
 
     def create_widgets(self):
+        print("Binding right-click event")
         # Initialize the game board and place mines
         self.initialize_board()
 
@@ -44,13 +45,10 @@ class Minesweeper:
                 button = tk.Button(self.board_frame, text="", width=1, height=1)
                 button.grid(row=row, column=col)
 
-                # Store the button reference in the 2D list
                 self.buttons[row][col] = button
 
-                # Bind left-click event
                 button.bind("<Button-1>", lambda event, r=row, c=col: self.on_left_click(r, c))
-                # Bind right-click event
-                button.bind("<Button-2>", lambda event, r=row, c=col: self.on_right_click(r, c))
+                button.bind("<Button-3>", lambda event, r=row, c=col: self.on_right_click(r, c))
 
         # Set weights for rows and columns
         for i in range(2):
@@ -59,10 +57,10 @@ class Minesweeper:
         for j in range(self.cols):
             self.master.grid_columnconfigure(j, weight=1)
 
-        print("Buttons:")
-        print(self.buttons)
-        print("Board:")
-        print(self.board)
+        # print("Buttons:")
+        # print(self.buttons)
+        # print("Board:")
+        # print(self.board)
 
     def load_emoji(self):
         # Load the emoji image
@@ -79,10 +77,14 @@ class Minesweeper:
         for i in range(self.rows):
             for j in range(self.cols):
                 if self.board[i][j] != "M":
-                    self.board[i][j] = "0"  # Make sure it's a string "0", not an integer
+                    
+                    self.board[i][j] = self.count_adjacent_mines(i, j) 
+                
+                           
 
         print("Initialized Board:")
-        print(self.board)
+        for p in self.board:
+            print (p)
 
     def on_left_click(self, row, col):
         # Check if the clicked cell is a mine
@@ -96,23 +98,27 @@ class Minesweeper:
                 # If no adjacent mines, recursively reveal neighboring cells
                 self.reveal_empty_cells(row, col)
             else:
-                self.update_cell(row, col, str(adjacent_mines))
-                self.check_game_won()
+                self.update_cell(row, col, adjacent_mines)
+        
+        # Update the mines left count and check if the game is won
+        self.update_mines_left(0)
 
     def on_right_click(self, row, col):
         # Check if the clicked cell is not revealed
         if not self.is_cell_revealed(row, col):
-            # Check if the cell is flagged, if so, unflag it
+            # If the cell is flagged, unflag it
             if self.buttons[row][col]['text'] == "F":
                 self.buttons[row][col].config(text="")
                 self.update_mines_left(1)
             else:
-                # If the cell contains a mine, mark it with "M", else, flag it with "F"
-                if self.board[row][col] == "M":
-                    self.buttons[row][col].config(text="M", state=tk.DISABLED)
-                    self.update_mines_left(-1)
-                else:
-                    self.buttons[row][col].config(text="F")
+                self.buttons[row][col].config(text="F") 
+                # Flag the cell only if it is a mine
+                # if self.board[row][col] == "M":
+                #     self.buttons[row][col].config(text="F", bg="red")
+                self.update_mines_left(-1)
+
+
+
 
     def count_adjacent_mines(self, row, col):
         # Count the number of adjacent mines to a cell
@@ -124,7 +130,7 @@ class Minesweeper:
         return count
 
     def update_mines_left(self, increment):
-        # Update the mines left count and update the label
+        print(f"Updating mines left by {increment}")
         self.mines += increment
         self.mines_left_label.config(text=f"Mines Left: {self.mines}")
         
@@ -132,12 +138,12 @@ class Minesweeper:
         button = self.buttons[row][col]
 
         color_dict = {
-            "1": "#0000FF",  # blue
-            "2": "#008000",  # green
-            "3": "#FF0000",  # red
-            "4": "#000080",  # navy
-            "5": "#800000",  # maroon
-            "6": "#800080"   # purple
+            1: "#0000FF",  # blue
+            2: "#008000",  # green
+            3: "#FF0000",  # red
+            4: "#000080",  # navy
+            5: "#800000",  # maroon
+            6: "#800080"   # purple
         }
 
         button_color = color_dict.get(value, "#000000")
@@ -149,16 +155,30 @@ class Minesweeper:
         if 0 <= row < self.rows and 0 <= col < self.cols and not self.is_cell_revealed(row, col):
             # Check if the cell is within the grid bounds and is not already revealed
             button = self.buttons[row][col]
-            button.config(text="", bg="#404040", bd=1)  # Darker background for cells with 0 value
 
-            for i in range(max(0, row - 1), min(self.rows, row + 2)):
-                for j in range(max(0, col - 1), min(self.cols, col + 2)):
-                    if not self.is_cell_revealed(i, j) and self.buttons[i][j]['state'] != tk.DISABLED:
-                        if self.board[i][j] == "0":
-                            self.reveal_empty_cells(i, j)
-                        elif self.board[i][j] != "M":
-                            adjacent_mines = self.count_adjacent_mines(i, j)
-                            self.buttons[i][j].config(text=str(adjacent_mines), bg="#D3D3D3", bd=1)  # Light gray background with black borders
+            # Check if the cell is not revealed, then reveal it
+            if button['text'] != " "  and self.board[row][col] == 0:
+                
+                button.config(text=" ", bg="#FFFFFF", bd=1)  # White background for cells with 0 value
+
+                for offset in [(-1, 0),(0,-1), (0,1), (1,0)]:
+                    nextCell = (row + offset[0], col + offset[1])
+                    inBounds = 0 <= nextCell[0] < self.rows and 0 <= nextCell[1] < self.cols
+                    if inBounds and not self.is_cell_revealed(nextCell[0], nextCell[1]):
+                        
+                        self.reveal_empty_cells(nextCell[0], nextCell[1])
+                    # for i in range(max(0, row - 1), min(self.rows, row + 2)):
+                    #     for j in range(max(0, col - 1), min(self.cols, col + 2)):
+                    #         if not self.is_cell_revealed(i, j) and self.buttons[i][j]['state'] != tk.DISABLED:
+                    #             if (i, j) != (row, col):  
+                    #                 print(i, j)
+                    #                 self.reveal_empty_cells(i, j)
+                    #         elif self.board[i][j] != "M":
+                    #             adjacent_mines = self.count_adjacent_mines(i, j)
+                    #             self.buttons[i][j].config(text=str(adjacent_mines), bg="#D3D3D3", bd=1)
+            elif self.board[row][col] != "M":
+                self.update_cell(row, col, self.board[row][col])
+
 
     def reveal_all_mines(self):
         # Reveal all mines on the game board
@@ -168,7 +188,8 @@ class Minesweeper:
                     self.update_cell(i, j, "X")
 
     def is_cell_revealed(self, row, col):
-        return self.buttons[row][col]['text'] != " "
+        return self.buttons[row][col]['text'] == " " or self.buttons[row][col]['bg'] == "red"
+
 
     def game_over(self):
         # Change the emoji to sad
@@ -184,7 +205,7 @@ class Minesweeper:
 
     def reset_game(self):
         # Change the emoji back to happy
-        self.emoji_path = "media/happy_emoji.png"
+        self.emoji_path = "media/smiley.png"
         self.load_emoji()
 
         # Destroy the game over frame and recreate the game board
