@@ -10,6 +10,7 @@ class Minesweeper:
         self.mines = mines
         self.board = [[0 for _ in range(cols)] for _ in range(rows)]
         self.buttons = [[None for _ in range(cols)] for _ in range(rows)]
+        self.emoji_path = "media/happy_emoji.png"
 
         self.create_widgets()
 
@@ -17,9 +18,25 @@ class Minesweeper:
         # Initialize the game board and place mines
         self.initialize_board()
 
+        # Create a label to display the number of mines left
+        self.mines_left_label = tk.Label(self.master, text=f"Mines Left: {self.mines}", font=("Helvetica", 14), bg="lightgray")
+        self.mines_left_label.grid(row=0, column=self.cols + 1, sticky="nsew")
+    
+        # Create a frame for the emoji grid
+        self.emoji_frame = tk.Frame(self.master)
+        self.emoji_frame.grid(row=0, column=0, rowspan=1, columnspan=self.cols)
+
+        # Load the happy emoji image
+        self.load_emoji()
+
+        # Create a label for the emoji
+        self.emoji_label = tk.Label(self.emoji_frame, image=self.emoji_image, bg="lightgray")
+        self.emoji_label.image = self.emoji_image
+        self.emoji_label.grid(row=0, column=0, rowspan=1, columnspan=self.cols, sticky="nsew")
+
         # Create a frame for the game board
         self.board_frame = tk.Frame(self.master)
-        self.board_frame.grid(row=0, column=0, rowspan=self.rows, columnspan=self.cols)
+        self.board_frame.grid(row=1, column=0, rowspan=self.rows, columnspan=self.cols)
 
         for row in range(self.rows):
             for col in range(self.cols):
@@ -35,10 +52,9 @@ class Minesweeper:
                 # Bind right-click event
                 button.bind("<Button-2>", lambda event, r=row, c=col: self.on_right_click(r, c))
 
-
         # Set weights for rows and columns
-        for i in range(self.rows):
-            self.master.grid_rowconfigure(i, weight=1)  # Adjust weight to your preference
+        for i in range(2):
+            self.master.grid_rowconfigure(i, weight=1)
 
         for j in range(self.cols):
             self.master.grid_columnconfigure(j, weight=1)
@@ -47,6 +63,10 @@ class Minesweeper:
         print(self.buttons)
         print("Board:")
         print(self.board)
+
+    def load_emoji(self):
+        # Load the emoji image
+        self.emoji_image = ImageTk.PhotoImage(Image.open(self.emoji_path).resize((50, 50), Image.LANCZOS))
 
     def initialize_board(self):
         # Place mines randomly on the game board
@@ -64,7 +84,6 @@ class Minesweeper:
         print("Initialized Board:")
         print(self.board)
 
-
     def on_left_click(self, row, col):
         # Check if the clicked cell is a mine
         if self.board[row][col] == "M":
@@ -73,22 +92,25 @@ class Minesweeper:
         else:
             # Check and reveal the number of adjacent mines
             adjacent_mines = self.count_adjacent_mines(row, col)
-            if adjacent_mines == 0:
+            if adjacent_mines == 0 and not self.is_cell_revealed(row, col):
                 # If no adjacent mines, recursively reveal neighboring cells
                 self.reveal_empty_cells(row, col)
             else:
                 self.update_cell(row, col, str(adjacent_mines))
-            
+                self.check_game_won()
+
     def on_right_click(self, row, col):
         # Check if the clicked cell is not revealed
         if not self.is_cell_revealed(row, col):
             # Check if the cell is flagged, if so, unflag it
             if self.buttons[row][col]['text'] == "F":
                 self.buttons[row][col].config(text="")
+                self.update_mines_left(1)
             else:
                 # If the cell contains a mine, mark it with "M", else, flag it with "F"
                 if self.board[row][col] == "M":
                     self.buttons[row][col].config(text="M", state=tk.DISABLED)
+                    self.update_mines_left(-1)
                 else:
                     self.buttons[row][col].config(text="F")
 
@@ -101,9 +123,14 @@ class Minesweeper:
                     count += 1
         return count
 
-    def update_cell(self, row, col, value):
-        button = self.buttons[row][col] 
+    def update_mines_left(self, increment):
+        # Update the mines left count and update the label
+        self.mines += increment
+        self.mines_left_label.config(text=f"Mines Left: {self.mines}")
         
+    def update_cell(self, row, col, value):
+        button = self.buttons[row][col]
+
         color_dict = {
             "1": "#0000FF",  # blue
             "2": "#008000",  # green
@@ -121,22 +148,17 @@ class Minesweeper:
     def reveal_empty_cells(self, row, col):
         if 0 <= row < self.rows and 0 <= col < self.cols and not self.is_cell_revealed(row, col):
             # Check if the cell is within the grid bounds and is not already revealed
-            self.update_cell(row, col, " ", darker_gray=True)
+            button = self.buttons[row][col]
+            button.config(text="", bg="#404040", bd=1)  # Darker background for cells with 0 value
 
-            queue = [(row, col)]
-
-            while queue:
-                current_row, current_col = queue.pop(0)
-
-                for i in range(max(0, current_row - 1), min(self.rows, current_row + 2)):
-                    for j in range(max(0, current_col - 1), min(self.cols, current_col + 2)):
-                        if not self.is_cell_revealed(i, j):
-                            if self.board[i][j] == "0":
-                                self.update_cell(i, j, "0", darker_gray=True)
-                                queue.append((i, j))
-                            elif self.board[i][j] != "M":
-                                self.update_cell(i, j, str(self.board[i][j]))
-
+            for i in range(max(0, row - 1), min(self.rows, row + 2)):
+                for j in range(max(0, col - 1), min(self.cols, col + 2)):
+                    if not self.is_cell_revealed(i, j) and self.buttons[i][j]['state'] != tk.DISABLED:
+                        if self.board[i][j] == "0":
+                            self.reveal_empty_cells(i, j)
+                        elif self.board[i][j] != "M":
+                            adjacent_mines = self.count_adjacent_mines(i, j)
+                            self.buttons[i][j].config(text=str(adjacent_mines), bg="#D3D3D3", bd=1)  # Light gray background with black borders
 
     def reveal_all_mines(self):
         # Reveal all mines on the game board
@@ -149,39 +171,31 @@ class Minesweeper:
         return self.buttons[row][col]['text'] != " "
 
     def game_over(self):
-        # Create a "Game Over" label
-        game_over_label = tk.Label(self.master, text="Game Over!", font=("Helvetica", 16), bg="lightgray")
-        game_over_label.grid(row=0, column=0, rowspan=self.rows, columnspan=self.cols, sticky="nsew")
+        # Change the emoji to sad
+        self.emoji_path = "media/sad_emoji.png"
+        self.load_emoji()
+
+        # Update the emoji label to display the sad emoji
+        self.emoji_label.config(image=self.emoji_image)
         
-        # Create emoji label
-        sad_emoji_image = Image.open("media/sad_emoji.png")
-        sad_emoji_image = sad_emoji_image.resize((50, 50), Image.LANCZOS)
-
-        emoji_image = ImageTk.PhotoImage(sad_emoji_image)
-        emoji_label = tk.Label(self.master, image=emoji_image, bg="lightgray")
-        emoji_label.image = emoji_image
-        emoji_label.grid(row=self.rows, column=0, rowspan=1, columnspan=self.cols, sticky="nsew")
-
-        # Create a "Play Again" button
-        play_again_button = tk.Button(self.master, text="Play Again", command=self.reset_game, bg="lightgray")
-        play_again_button.grid(row=self.rows+1, column=0, rowspan=1, columnspan=self.cols, sticky="nsew")
-
-        # Disable resizing of the rows and columns
-        for i in range(self.rows + 1):
-            self.master.grid_rowconfigure(i, weight=0)
-
-        for j in range(self.cols + 1):
-            self.master.grid_columnconfigure(j, weight=0)
+        # Reset the game after clicking on the sad emoji
+        self.emoji_label.bind("<Button-1>", lambda event: self.reset_game())
 
 
     def reset_game(self):
-        # Destroy the game over frame
+        # Change the emoji back to happy
+        self.emoji_path = "media/happy_emoji.png"
+        self.load_emoji()
+
+        # Destroy the game over frame and recreate the game board
         for widget in self.master.winfo_children():
             widget.destroy()
 
-        # Recreate the game board and start a new game
         self.board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
         self.buttons = [[None for _ in range(self.cols)] for _ in range(self.rows)]
         self.initialize_board()
         self.create_widgets()
+        self.update_mines_left(0)
+
+
 
