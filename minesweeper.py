@@ -31,7 +31,7 @@ class Minesweeper:
         self.load_emoji()
         
         self.mine_image = ImageTk.PhotoImage(Image.open("media/mine.png").resize((30,30), Image.NEAREST))
-        # self.mine_image = ImageTk.PhotoImage(Image.open("media/mine.png").resize((30,30), Image.NEAREST))
+        self.flag_image = ImageTk.PhotoImage(Image.open("media/flag.png").resize((30,30), Image.NEAREST))
 
 
         # Create a label for the emoji
@@ -112,15 +112,14 @@ class Minesweeper:
     def on_right_click(self, row, col):
         # Check if the clicked cell is not revealed
         if not self.is_cell_revealed(row, col):
-            # If the cell is flagged, unflag it
-            if self.buttons[row][col]['text'] == "F":
-                self.buttons[row][col].config(text="")
+            # Check if the cell already has a flag image
+            if self.buttons[row][col]['image']:
+                # Remove the flag image
+                self.buttons[row][col].config(image="", text="")
                 self.update_mines_left(1)
             else:
-                self.buttons[row][col].config(text="F") 
-                # Flag the cell only if it is a mine
-                # if self.board[row][col] == "M":
-                #     self.buttons[row][col].config(text="F", bg="red")
+                # Add the flag image
+                self.buttons[row][col].config(image=self.flag_image, compound=tk.CENTER)
                 self.update_mines_left(-1)
 
 
