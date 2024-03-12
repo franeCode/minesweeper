@@ -8,6 +8,8 @@ class Minesweeper:
         self.rows = rows
         self.cols = cols
         self.mines = mines
+        self.total_mines = 10
+        self.flagged_cells = 0
         self.board = [[0 for _ in range(cols)] for _ in range(rows)]
         self.buttons = [[None for _ in range(cols)] for _ in range(rows)]
         self.emoji_path = "media/smiley.png"
@@ -74,7 +76,8 @@ class Minesweeper:
     def initialize_board(self):
         # Place mines randomly on the game board
         mine_positions = random.sample(range(self.rows * self.cols), self.mines)
-        print(mine_positions)
+        
+        print(self.mines)
         for position in mine_positions:
             row = position // self.cols
             col = position % self.cols
@@ -110,17 +113,19 @@ class Minesweeper:
         self.update_mines_left(0)
 
     def on_right_click(self, row, col):
-        # Check if the clicked cell is not revealed
-        if not self.is_cell_revealed(row, col):
+        # Check if the clicked cell is not revealed and the number of flagged cells is less than 10
+        if not self.is_cell_revealed(row, col) and self.flagged_cells < self.total_mines:
             # Check if the cell already has a flag image
             if self.buttons[row][col]['image']:
                 # Remove the flag image
                 self.buttons[row][col].config(image="", text="")
                 self.update_mines_left(1)
+                self.flagged_cells -= 1  
             else:
                 # Add the flag image
                 self.buttons[row][col].config(image=self.flag_image, compound=tk.CENTER)
                 self.update_mines_left(-1)
+                self.flagged_cells += 1 
 
 
     def count_adjacent_mines(self, row, col):
@@ -133,7 +138,7 @@ class Minesweeper:
         return count
 
     def update_mines_left(self, increment):
-        print(f"Updating mines left by {increment}")
+        # print(f"Updating mines left by {increment}")
         self.mines += increment
         self.mines_left_label.config(text=f"Mines Left: {self.mines}")
         
@@ -150,14 +155,12 @@ class Minesweeper:
         }
 
         button_color = color_dict.get(value, "#000000")
-        print(f"Updating cell at ({row}, {col}) with value {value} and color {button_color}")
+        # print(f"Updating cell at ({row}, {col}) with value {value} and color {button_color}")
 
         if value == "M":
             # self.mine_image = Image.open("media/mine.png")
-           
             button.config(image=self.mine_image, compound=tk.CENTER)
-            # button.image = img
-            print(self.mine_image)
+            
         else:
             button.config(text=value, fg=button_color)
             
@@ -234,7 +237,10 @@ class Minesweeper:
 
         self.board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
         self.buttons = [[None for _ in range(self.cols)] for _ in range(self.rows)]
-        self.initialize_board()
+        self.flagged_cells = 0
+        self.total_mines  = 10
+        self.mines  = 10
+        #self.initialize_board()
         self.create_widgets()
         self.update_mines_left(0)
 
