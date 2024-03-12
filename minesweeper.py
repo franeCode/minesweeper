@@ -29,6 +29,10 @@ class Minesweeper:
 
         # Load the happy emoji image
         self.load_emoji()
+        
+        self.mine_image = ImageTk.PhotoImage(Image.open("media/mine.png").resize((30,30), Image.NEAREST))
+        # self.mine_image = ImageTk.PhotoImage(Image.open("media/mine.png").resize((30,30), Image.NEAREST))
+
 
         # Create a label for the emoji
         self.emoji_label = tk.Label(self.emoji_frame, image=self.emoji_image, bg="lightgray")
@@ -42,8 +46,9 @@ class Minesweeper:
         for row in range(self.rows):
             for col in range(self.cols):
                 # Create buttons or labels for each cell in the grid
-                button = tk.Button(self.board_frame, text="", width=1, height=1)
-                button.grid(row=row, column=col)
+                button = tk.Button(self.board_frame, text="", compound=tk.CENTER, width=1, height=1)
+                button.grid(row=row, column=col,sticky="news")
+                # button.config(compound=tk.CENTER, width=25, height = 25)
 
                 self.buttons[row][col] = button
 
@@ -51,7 +56,7 @@ class Minesweeper:
                 button.bind("<Button-3>", lambda event, r=row, c=col: self.on_right_click(r, c))
 
         # Set weights for rows and columns
-        for i in range(2):
+        for i in range(self.rows):
             self.master.grid_rowconfigure(i, weight=1)
 
         for j in range(self.cols):
@@ -69,6 +74,7 @@ class Minesweeper:
     def initialize_board(self):
         # Place mines randomly on the game board
         mine_positions = random.sample(range(self.rows * self.cols), self.mines)
+        print(mine_positions)
         for position in mine_positions:
             row = position // self.cols
             col = position % self.cols
@@ -118,8 +124,6 @@ class Minesweeper:
                 self.update_mines_left(-1)
 
 
-
-
     def count_adjacent_mines(self, row, col):
         # Count the number of adjacent mines to a cell
         count = 0
@@ -149,8 +153,15 @@ class Minesweeper:
         button_color = color_dict.get(value, "#000000")
         print(f"Updating cell at ({row}, {col}) with value {value} and color {button_color}")
 
-        button.config(text=value, fg=button_color)
-
+        if value == "M":
+            # self.mine_image = Image.open("media/mine.png")
+           
+            button.config(image=self.mine_image, compound=tk.CENTER)
+            # button.image = img
+            print(self.mine_image)
+        else:
+            button.config(text=value, fg=button_color)
+            
     def reveal_empty_cells(self, row, col):
         if 0 <= row < self.rows and 0 <= col < self.cols and not self.is_cell_revealed(row, col):
             # Check if the cell is within the grid bounds and is not already revealed
@@ -181,14 +192,22 @@ class Minesweeper:
 
 
     def reveal_all_mines(self):
+        self.emoji_path = "media/mine.png"
+        self.load_emoji()
+
         # Reveal all mines on the game board
         for i in range(self.rows):
             for j in range(self.cols):
                 if self.board[i][j] == "M":
-                    self.update_cell(i, j, "X")
+                    self.update_cell(i, j, "M")
 
     def is_cell_revealed(self, row, col):
         return self.buttons[row][col]['text'] == " " or self.buttons[row][col]['bg'] == "red"
+
+    # def disable_all_buttons(self):
+    #     for row in range(self.rows):
+    #         for col in range(self.cols):
+    #             self.buttons[row][col].config(state=tk.DISABLED)
 
 
     def game_over(self):
@@ -198,6 +217,8 @@ class Minesweeper:
 
         # Update the emoji label to display the sad emoji
         self.emoji_label.config(image=self.emoji_image)
+        
+        # self.disable_all_buttons()
         
         # Reset the game after clicking on the sad emoji
         self.emoji_label.bind("<Button-1>", lambda event: self.reset_game())
