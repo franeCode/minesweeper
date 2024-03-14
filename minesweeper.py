@@ -75,11 +75,6 @@ class Minesweeper:
         for j in range(self.cols):
             self.master.grid_columnconfigure(j, weight=1)
 
-        # print("Buttons:")
-        # print(self.buttons)
-        # print("Board:")
-        # print(self.board)
-
     def load_emoji(self):
         # Load the emoji image
         self.emoji_image = ImageTk.PhotoImage(Image.open(self.emoji_path).resize((50, 50), Image.LANCZOS))
