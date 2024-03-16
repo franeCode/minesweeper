@@ -147,20 +147,13 @@ class Minesweeper:
                 if self.board[i][j] == "M":
                     count += 1
         return count
-
+    
     def update_time(self):
         if not self.is_game_over:
             self.time += 1
             
-            # Format the time into minutes and seconds
-            # minutes = self.time // 60
-            # seconds = self.time % 60
-            # time_str = f"{seconds:003}"
-            
-            time_str = f"{self.time:03}"
-            
             # Update the time label text
-            self.time_label.config(text=time_str)
+            self.time_label.config(text=str(self.time).zfill(3))
         
         # Schedule the update_time method to be called again after 1000 milliseconds (1 second)
         self.master.after(1000, self.update_time)
