@@ -119,7 +119,7 @@ class Minesweeper:
         
         # Update the mines left count and check if the game is won
         self.update_mines_left(0)
-
+    
     def on_right_click(self, row, col):
         if self.is_game_over:
             return
@@ -136,7 +136,8 @@ class Minesweeper:
                 self.buttons[row][col].config(image=self.flag_image, compound=tk.CENTER)
                 self.update_mines_left(-1)
                 self.flagged_cells += 1 
-
+        # in this function, check if the last mine is flagged, if so, call game_won
+        self.game_won()
 
     def count_adjacent_mines(self, row, col):
         # Count the number of adjacent mines to a cell
@@ -247,7 +248,16 @@ class Minesweeper:
         for row in range(self.rows):
             for col in range(self.cols):
                 self.buttons[row][col].config(state=tk.DISABLED)
-                
+
+    # Write me function to check if the game is won, all mines are flagged
+    def game_won(self):
+        if self.flagged_cells == self.total_mines:
+            self.emoji_path = "media/happy_emoji.png"
+            self.load_emoji()
+            self.emoji_label.config(image=self.emoji_image)
+            self.disable_all_buttons()
+            self.reset_time()
+    
     def game_over(self):
         self.is_game_over = True
         # Change the emoji to sad
