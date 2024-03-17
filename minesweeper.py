@@ -15,6 +15,8 @@ class Minesweeper:
         self.emoji_path = "media/smiley.png"
         self.time = 0
         self.is_game_over = False
+        self.timer = None
+        self.is_game_won = False
 
         self.create_widgets()
 
@@ -26,7 +28,7 @@ class Minesweeper:
         # Create a label to display the number of mines left
         self.mines_left_label = tk.Label(self.master, text=self.mines, bd=2, bg="#500028", fg="red", font=("Fixedsys", 24), relief="ridge", highlightbackground="black")
         self.mines_left_label.grid(row=0, column=1, sticky="w")
-        
+        self.mines_left_label.config(width=3, height=1)
         # Create a frame for the emoji grid
         self.emoji_frame = tk.Frame(self.master)
         self.emoji_frame.grid(row=0, column=0, rowspan=1, columnspan=self.cols)
@@ -47,8 +49,8 @@ class Minesweeper:
         self.time_label.grid(row=0, column=6, sticky="e")
 
         # Set minimum size for the columns
-        self.master.grid_columnconfigure(1, minsize=200)  
-        self.master.grid_columnconfigure(6, minsize=200)
+        # self.master.grid_columnconfigure(1, minsize=200)  
+        # self.master.grid_columnconfigure(6, minsize=200)
 
         # Create a frame for the game board
         self.board_frame = tk.Frame(self.master)
@@ -157,10 +159,10 @@ class Minesweeper:
             # Update the time label text
             self.time_label.config(text=str(self.time).zfill(3))
             # Schedule the update_time method to be called again after 1000 milliseconds (1 second)
-            self.master.after(1000, self.update_time)
+            self.timer = self.master.after(1000, self.update_time)  # Save the timer id
         else:
             # Stop the timer
-            self.master.after_cancel(self.update_time)
+            self.stop_timer()
         
         
     def reset_time(self):
@@ -171,6 +173,7 @@ class Minesweeper:
         # print(f"Updating mines left by {increment}")
         self.mines += increment
         self.mines_left_label.config(text=self.mines)
+        self.game_won()
         
     def update_cell(self, row, col, value):
         button = self.buttons[row][col]
@@ -247,20 +250,25 @@ class Minesweeper:
             for col in range(self.cols):
                 self.buttons[row][col].config(state=tk.DISABLED)
 
-    # Write me function to check if the game is won, all mines are flagged
+    def stop_timer(self):
+        if self.timer is not None:
+            self.master.after_cancel(self.timer)
+            self.timer = None
+
+                    
     def game_won(self):
         if self.flagged_cells == self.total_mines:
             self.emoji_path = "media/happy_emoji.png"
             self.load_emoji()
             self.emoji_label.config(image=self.emoji_image)
             self.disable_all_buttons()
-            # Reset a game after clicking on the happy emoji
-            self.emoji_label.bind("<Button-1>", lambda event: self.reset_game())
-            
-            self.reset_time()
+            self.stop_timer() 
+            self.is_game_won = True
+
     
     def game_over(self):
         self.is_game_over = True
+        self.is_game_won = False
         # Change the emoji to sad
         self.emoji_path = "media/sad_emoji.png"
         self.load_emoji()
@@ -276,6 +284,30 @@ class Minesweeper:
 
         self.reset_time()
 
+    def reset_game(self):
+        self.is_game_over = False
+        self.is_game_won = False
+        # Change the emoji back to happy
+        self.emoji_path = "media/smiley.png"
+        self.load_emoji()
+
+        # Destroy the game over frame and recreate the game board
+        for widget in self.master.winfo_children():
+            widget.destroy()
+
+        self.board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
+        self.buttons = [[None for _ in range(self.cols)] for _ in range(self.rows)]
+        self.flagged_cells = 0
+        self.total_mines  = 10
+        self.mines  = 10
+        #self.initialize_board()
+        # self.reset_time()
+        self.create_widgets()
+        self.update_mines_left(0)
+        self.master.update()
+
+
+    # Update widget when game is reset
     def reset_game(self):
         self.is_game_over = False
         # Change the emoji back to happy
@@ -296,4 +328,4 @@ class Minesweeper:
         self.create_widgets()
         self.update_mines_left(0)
 
-# Check the code for the errors
+        self.master.update()
