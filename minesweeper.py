@@ -74,6 +74,8 @@ class Minesweeper:
 
         for j in range(self.cols):
             self.master.grid_columnconfigure(j, weight=1)
+        
+        self.emoji_label.bind("<Button-1>", lambda event: self.reset_game())
 
     def load_emoji(self):
         # Load the emoji image
@@ -154,9 +156,12 @@ class Minesweeper:
             
             # Update the time label text
             self.time_label.config(text=str(self.time).zfill(3))
+            # Schedule the update_time method to be called again after 1000 milliseconds (1 second)
+            self.master.after(1000, self.update_time)
+        else:
+            # Stop the timer
+            self.master.after_cancel(self.update_time)
         
-        # Schedule the update_time method to be called again after 1000 milliseconds (1 second)
-        self.master.after(1000, self.update_time)
         
     def reset_time(self):
         # Reset the time counter to 0
@@ -249,6 +254,9 @@ class Minesweeper:
             self.load_emoji()
             self.emoji_label.config(image=self.emoji_image)
             self.disable_all_buttons()
+            # Reset a game after clicking on the happy emoji
+            self.emoji_label.bind("<Button-1>", lambda event: self.reset_game())
+            
             self.reset_time()
     
     def game_over(self):
@@ -284,8 +292,8 @@ class Minesweeper:
         self.total_mines  = 10
         self.mines  = 10
         #self.initialize_board()
+        # self.reset_time()
         self.create_widgets()
         self.update_mines_left(0)
 
-
-
+# Check the code for the errors
